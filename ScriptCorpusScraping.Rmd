@@ -1,0 +1,79 @@
+---
+title: "ScriptCorpusScraping"
+author: "hollen"
+date: "May 7, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(rvest)
+library(tidyverse)
+library(quanteda)
+library(xml2)
+```
+
+## ScriptCorpusScraping
+
+This is a simple R Markdown application to scrape the script from the current episodes of Bob's Burgers into a quanteda corpus.  This corpus can then be searched with kwic() ("KeyWordInContext") in order to determine the episode in which the keyword is found.
+
+```{r VarInitialization}
+baseurl<-'https://www.springfieldspringfield.co.uk/view_episode_scripts.php?tv-show=bobs-burgers&episode='
+seasonNumbers<-c(rep(1,each=13),
+                 rep(2,each=9),
+                 rep(3,each=23),
+                 rep(4,each=22),
+                 rep(5,each=21),
+                 rep(6,each=19),
+                 rep(7,each=22),
+                 rep(8,each=20),
+                 rep(9,each=21))
+seasonText<-ifelse(seasonNumbers<10,paste0("s0",seasonNumbers),paste0("s",seasonNumbers))
+
+episodeNumbers<-c(rep(1:13),
+                  rep(1:9),
+                  rep(1:23),
+                  rep(1:22),
+                  rep(1:21),
+                  rep(1:19),
+                  rep(1:22),
+                  rep(1:6),rep(8:21),
+                  rep(1:21))
+episodeText<-ifelse(episodeNumbers<10,paste0("e0",episodeNumbers),paste0("e",episodeNumbers))
+
+allShows.scripts<-NULL
+
+```
+
+
+```{r WebScraping, echo=FALSE}
+cntEpisodes<-length(episodeText)
+for (i in 1:cntEpisodes) {
+  urlShow<-paste0(baseurl, seasonText[i], episodeText[i])
+  webpageShow<-read_html(urlShow)
+  scriptShow<-webpageShow %>% rvest::html_node('.scrolling-script-container')
+  allShows.scripts[i]<-rvest::html_text(scriptShow, trim=TRUE)
+}
+```
+
+```{r CleanUpTheResults, echo=FALSE}
+theShow<-as.data.frame(allShows.scripts, stringsAsFactors = FALSE)
+counterShow<-paste0(seasonText, episodeText)
+row.names(theShow)<-counterShow[1:length(counterShow)]
+colnames(theShow)<-'text'
+as.tibble(theShow)
+
+theShow.corpus<-corpus(theShow)
+metacorpus(theShow.corpus,'source')<-'No peaking!'
+summary(theShow.corpus,10,showmeta=FALSE)
+```
+
+```{r SearchKeyword}
+kwic(theShow.corpus, phrase("You poor dumb thing"),window=15)
+```
+
+```{r StoreItForLaterRetrieval, echo=FALSE}
+BobsBurgers.corpus <- theShow.corpus
+save(BobsBurgers.corpus, file='BobsBurgers.corpus.RData')
+```
+
