@@ -3,6 +3,8 @@ title: "ScriptCorpusScraping"
 author: "hollen"
 date: "May 7, 2019"
 output: html_document
+params:
+  showToScrape: "GOT"
 ---
 
 ```{r setup, include=FALSE}
@@ -17,34 +19,94 @@ library(xml2)
 
 This is a simple R Markdown application to scrape the script from the current episodes of Bob's Burgers into a quanteda corpus.  This corpus can then be searched with kwic() ("KeyWordInContext") in order to determine the episode in which the keyword is found.
 
-```{r VarInitialization}
-baseurl<-'https://www.springfieldspringfield.co.uk/view_episode_scripts.php?tv-show=bobs-burgers&episode='
-seasonNumbers<-c(rep(1,each=13),
-                 rep(2,each=9),
-                 rep(3,each=23),
-                 rep(4,each=22),
-                 rep(5,each=21),
-                 rep(6,each=19),
-                 rep(7,each=22),
-                 rep(8,each=20),
-                 rep(9,each=21))
-seasonText<-ifelse(seasonNumbers<10,paste0("s0",seasonNumbers),paste0("s",seasonNumbers))
-
-episodeNumbers<-c(rep(1:13),
-                  rep(1:9),
-                  rep(1:23),
-                  rep(1:22),
-                  rep(1:21),
-                  rep(1:19),
-                  rep(1:22),
-                  rep(1:6),rep(8:21),
-                  rep(1:21))
-episodeText<-ifelse(episodeNumbers<10,paste0("e0",episodeNumbers),paste0("e",episodeNumbers))
-
-allShows.scripts<-NULL
-
+```{r VarInitialization_BobsBurgers}
+if (params$showToScrape == "BobsBurgers") {
+  baseurl<-'https://www.springfieldspringfield.co.uk/view_episode_scripts.php?tv-show=bobs-burgers&episode='
+  seasonNumbers<-c(rep(1,each=13),
+                   rep(2,each=9),
+                   rep(3,each=23),
+                   rep(4,each=22),
+                   rep(5,each=21),
+                   rep(6,each=19),
+                   rep(7,each=22),
+                   rep(8,each=20),
+                   rep(9,each=21))
+  seasonText<-ifelse(seasonNumbers<10,paste0("s0",seasonNumbers),paste0("s",seasonNumbers))
+  
+  episodeNumbers<-c(rep(1:13),
+                    rep(1:9),
+                    rep(1:23),
+                    rep(1:22),
+                    rep(1:21),
+                    rep(1:19),
+                    rep(1:22),
+                    rep(1:6),rep(8:21),
+                    rep(1:21))
+  episodeText<-ifelse(episodeNumbers<10,paste0("e0",episodeNumbers),paste0("e",episodeNumbers))
+  
+  allShows.scripts<-NULL
+}
 ```
 
+```{r varInitialization_TBBT}
+if (params$showToScrape == "TBBT") {
+
+  baseurl<-'https://www.springfieldspringfield.co.uk/view_episode_scripts.php?tv-show=big-bang-theory&episode='
+  seasonNumbers<-c(rep(1,each=17),
+                   rep(2,each=23),
+                   rep(3,each=23),
+                   rep(4,each=24),
+                   rep(5,each=24),
+                   rep(6,each=24),
+                   rep(7,each=24),
+                   rep(8,each=24),
+                   rep(9,each=24),
+                   rep(10,each=24),
+                   rep(11,each=24),
+                   rep(12,each=22))
+  seasonText<-ifelse(seasonNumbers<10,paste0("s0",seasonNumbers),paste0("s",seasonNumbers))
+  
+  episodeNumbers<-c(rep(1:17),
+                    rep(1:23),
+                    rep(1:23),
+                    rep(1:24),
+                    rep(1:24),
+                    rep(1:24),
+                    rep(1:24),
+                    rep(1:24),
+                    rep(1:24),
+                    rep(1:24),
+                    rep(1:24),
+                    rep(1:22))
+  episodeText<-ifelse(episodeNumbers<10,paste0("e0",episodeNumbers),paste0("e",episodeNumbers))
+  
+  allShows.scripts<-NULL
+}
+```
+
+```{r varInitialization_GOT}
+if (params$showToScrape == "GOT") {
+
+  baseurl<-'https://www.springfieldspringfield.co.uk/view_episode_scripts.php?tv-show=game-of-thrones&episode='
+  seasonNumbers<-c(rep(1:6,each=10),
+                   rep(7,each=6),
+                   rep(8,each=4))
+  seasonText<-ifelse(seasonNumbers<10,paste0("s0",seasonNumbers),paste0("s",seasonNumbers))
+  
+  # Website was missing season 7 episode 1
+  episodeNumbers<-c(rep(1:10),
+                    rep(1:10),
+                    rep(1:10),
+                    rep(1:10),
+                    rep(1:10),
+                    rep(1:10),
+                    rep(2:7),
+                    rep(1:4))
+  episodeText<-ifelse(episodeNumbers<10,paste0("e0",episodeNumbers),paste0("e",episodeNumbers))
+  
+  allShows.scripts<-NULL
+}
+```
 
 ```{r WebScraping, echo=FALSE}
 cntEpisodes<-length(episodeText)
@@ -69,11 +131,26 @@ summary(theShow.corpus,10,showmeta=FALSE)
 ```
 
 ```{r SearchKeyword}
-kwic(theShow.corpus, phrase("You poor dumb thing"),window=15)
+if (params$showToScrape == "BobsBurgers") {
+  kwic(theShow.corpus, phrase("You poor dumb thing"),window=15)
+} else if (params$showToScrape == "TBBT") {
+  kwic(theShow.corpus, phrase("Spock"), window=15)
+} else if (params$showToScrape == "GOT") {
+  kwic(theShow.corpus, phrase("Hound"), window=15)
+}
+
 ```
 
 ```{r StoreItForLaterRetrieval, echo=FALSE}
-BobsBurgers.corpus <- theShow.corpus
-save(BobsBurgers.corpus, file='BobsBurgers.corpus.RData')
+if (params$showToScrape == "BobsBurgers") {
+  BobsBurgers.corpus <- theShow.corpus  
+  save(BobsBurgers.corpus, file='BobsBurgers.corpus.RData')
+} else if (params$showToScrape == "TBBT") {
+  TBBT.corpus <- theShow.corpus
+  save(TBBT.corpus, file='TBBT.corpus.RData')
+} else if (params$showToScrape == "GOT") {
+  GOT.corpus <- theShow.corpus
+  save(GOT.corpus, file='GOT.corpus.RData')
+}
 ```
 
